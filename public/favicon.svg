@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <circle cx="32" cy="32" r="30" fill="#FFC107" />
+  <path d="M32 2C32 2 32 62 32 62" stroke="#1A1A1A" stroke-width="1" stroke-opacity="0.3" />
+  <path d="M16 32C16 32 48 32 48 32" stroke="#1A1A1A" stroke-width="1" stroke-opacity="0.3" />
+  <path d="M2 32C2 17.6406 14.6406 5 29 5" stroke="#1A1A1A" stroke-width="1" stroke-opacity="0.3" />
+  <path d="M5 48C5 48 59 48 59 48" stroke="#1A1A1A" stroke-width="1" stroke-opacity="0.3" />
+  <path d="M5 16C5 16 59 16 59 16" stroke="#1A1A1A" stroke-width="1" stroke-opacity="0.3" />
+  <path d="M62 32C62 46.3594 49.3594 59 35 59" stroke="#1A1A1A" stroke-width="1" stroke-opacity="0.3" />
+  <circle cx="32" cy="16" r="3" fill="#1A1A1A" />
+  <circle cx="32" cy="48" r="3" fill="#1A1A1A" />
+  <circle cx="16" cy="32" r="3" fill="#1A1A1A" />
+  <circle cx="48" cy="32" r="3" fill="#1A1A1A" />
+  <circle cx="24" cy="24" r="2" fill="#1A1A1A" />
+  <circle cx="40" cy="40" r="2" fill="#1A1A1A" />
+  <circle cx="24" cy="40" r="2" fill="#1A1A1A" />
+  <circle cx="40" cy="24" r="2" fill="#1A1A1A" />
+</svg>
