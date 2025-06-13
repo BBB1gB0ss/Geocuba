@@ -1,3 +1,4 @@
+import api from "../../services/api";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDropzone } from "react-dropzone";
@@ -13,7 +14,6 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import Button from "../../components/ui/Button";
 import Alert from "../../components/ui/Alert";
-import { createLayer } from "../../services/layerService";
 
 const LayerUpload = () => {
   const navigate = useNavigate();
@@ -97,19 +97,28 @@ const LayerUpload = () => {
 
     // Aquí puedes subir el archivo real y obtener la URL si tienes endpoint para archivos
     // Por ahora, solo guardamos el nombre del archivo como ejemplo:
-    const file_url = file ? `/uploads/${file.name}` : null;
+    //const file_url = file ? `/uploads/${file.name}` : null;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("name", data.name);
+    formData.append("description", data.description);
+    formData.append("owner_id", 1); // Cambia por el id del usuario logueado si lo tienes
+    formData.append("palabras_clave", keywordsArray.join(", "));
+    formData.append("resolucion", data.resolution);
+    formData.append("updatedAt", new Date().toISOString());
+    formData.append("lat", 0);
+    formData.append("lng", 0);
 
     try {
-      await createLayer({
-        name: data.name,
-        description: data.description,
-        file_url,
-        owner_id: 1, // Cambia por el id del usuario logueado si lo tienes
-        palabras_clave: keywordsArray.join(", "),
-        resolucion: data.resolution,
-        updatedAt: new Date().toISOString(),
-        lat: 0, // Puedes pedir estos campos en el formulario si lo necesitas
-        lng: 0,
+      await api.post("/layers", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (progressEvent) => {
+          const percent = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percent);
+        },
       });
 
       setUploadProgress(100);
