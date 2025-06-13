@@ -16,7 +16,11 @@ import Button from "../../components/ui/Button";
 import Loading from "../../components/ui/Loading";
 import Modal from "../../components/ui/Modal";
 import Alert from "../../components/ui/Alert";
+import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 import {
+  deleteComment,
+  editComment,
   getLayerById,
   deleteLayer,
   addComment,
@@ -34,6 +38,9 @@ const LayerDetail = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [geojsonData, setGeojsonData] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState("");
 
   useEffect(() => {
     const fetchLayerData = async () => {
@@ -43,11 +50,11 @@ const LayerDetail = () => {
         setLayer(layerData);
 
         // Si tienes comentarios en la API, descomenta la siguiente línea:
-        //const commentsData = await getLayerComments(id);
-        //setComments(commentsData);
+        const commentsData = await getLayerComments(id);
+        setComments(commentsData);
 
         // Si no tienes comentarios en la API, puedes dejar setComments([]) o usar mocks
-        setComments([]);
+        //setComments([]);
       } catch (error) {
         console.error("Error fetching layer details:", error);
         setError("Error al cargar los detalles de la capa geográfica");
@@ -55,9 +62,36 @@ const LayerDetail = () => {
         setIsLoading(false);
       }
     };
-
     fetchLayerData();
   }, [id]);
+
+  // Cargar GeoJSON
+  useEffect(() => {
+    if (layer && layer.file_url) {
+      fetch(layer.file_url)
+        .then((res) => res.json())
+        .then((data) => setGeojsonData(data))
+        .catch(() => setGeojsonData(null));
+    }
+  }, [layer]);
+
+  const handleEditComment = async (commentId, newText) => {
+    try {
+      const updated = await editComment(commentId, { text: newText });
+      setComments(comments.map((c) => (c.id === commentId ? updated : c)));
+    } catch (error) {
+      setError("Error al editar el comentario");
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    try {
+      await deleteComment(commentId);
+      setComments(comments.filter((c) => c.id !== commentId));
+    } catch (error) {
+      setError("Error al eliminar el comentario");
+    }
+  };
 
   const handleSubmitComment = async (e) => {
     e.preventDefault();
@@ -67,20 +101,11 @@ const LayerDetail = () => {
     setIsSubmitting(true);
 
     try {
-      // In a real app, this would call the API
-      // For demo purposes, we're just updating the state
-
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const newComment = {
-        id: Date.now(), // Mock ID
-        content: commentText,
-        user: user.name,
-        userId: user.id,
-        role: user.role,
-        date: new Date().toISOString().split("T")[0],
-      };
+      // Llama a la API real para guardar el comentario
+      const newComment = await addComment(id, {
+        text: commentText,
+        // Puedes agregar más campos si tu backend los requiere
+      });
 
       setComments([newComment, ...comments]);
       setCommentText("");
@@ -174,11 +199,24 @@ const LayerDetail = () => {
           {/* Layer preview */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="aspect-w-16 aspect-h-9 bg-gray-200">
-              <img
-                src={layer.thumbnail || "/placeholder.png"}
-                alt={layer.name}
-                className="w-full h-full object-cover"
-              />
+              {geojsonData ? (
+                <MapContainer
+                  style={{ height: "400px", width: "100%" }}
+                  center={[20, -75]} // Cambia el centro si lo deseas
+                  zoom={5}
+                  scrollWheelZoom={true}
+                >
+                  <TileLayer
+                    attribution="&copy; OpenStreetMap contributors"
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <GeoJSON data={geojsonData} />
+                </MapContainer>
+              ) : (
+                <div className="w-full h-64 flex items-center justify-center bg-gray-100 text-gray-400">
+                  No se pudo cargar el GeoJSON
+                </div>
+              )}
             </div>
             <div className="p-4">
               <h2 className="text-xl font-semibold mb-3">Descripción</h2>
@@ -291,12 +329,72 @@ const LayerDetail = () => {
                               : "Usuario"}
                           </span>
                         </div>
-                        <p className="mt-1 text-gray-700">{comment.content}</p>
-                        <p className="mt-1 text-xs text-gray-500">
-                          {new Date(
-                            layer.updatedAt || layer.created_at
-                          ).toLocaleDateString()}
-                        </p>
+                        {/* Si está en modo edición, muestra el formulario */}
+                        {editingId === comment.id ? (
+                          <form
+                            className="mt-2 flex gap-2"
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              handleEditComment(comment.id, editText);
+                              setEditingId(null);
+                            }}
+                          >
+                            <input
+                              className="flex-1 border rounded px-2 py-1"
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              autoFocus
+                            />
+                            <button
+                              type="submit"
+                              className="text-green-600 font-semibold"
+                            >
+                              Guardar
+                            </button>
+                            <button
+                              type="button"
+                              className="text-gray-500"
+                              onClick={() => setEditingId(null)}
+                            >
+                              Cancelar
+                            </button>
+                          </form>
+                        ) : (
+                          <>
+                            <p className="mt-1 text-gray-700">
+                              {comment.content}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {new Date(
+                                layer.updatedAt || layer.created_at
+                              ).toLocaleDateString()}
+                            </p>
+                            {/* Botones solo para el autor o admin */}
+                            {user &&
+                              (user.id === comment.userId ||
+                                user.role === "admin") && (
+                                <div className="flex gap-2 mt-1">
+                                  <button
+                                    className="text-red-500 text-xs flex items-center gap-1"
+                                    onClick={() =>
+                                      handleDeleteComment(comment.id)
+                                    }
+                                  >
+                                    <FiTrash2 /> Eliminar
+                                  </button>
+                                  <button
+                                    className="text-blue-500 text-xs flex items-center gap-1"
+                                    onClick={() => {
+                                      setEditingId(comment.id);
+                                      setEditText(comment.content);
+                                    }}
+                                  >
+                                    <FiEdit /> Editar
+                                  </button>
+                                </div>
+                              )}
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

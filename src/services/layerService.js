@@ -46,17 +46,28 @@ export const deleteLayer = async (id) => {
 
 // Add comment to layer
 export const addComment = async (layerId, commentData) => {
-  const response = await api.post(`/layers/${layerId}/comments`, commentData);
+  // Cambia la URL para que apunte a /comments, no a /layers/:id/comments
+  const response = await api.post(`/comments`, {
+    ...commentData,
+    layer_id: layerId,
+  });
   return response.data;
 };
-
 // Get layer comments
 export const getLayerComments = async (layerId) => {
-  const response = await api.get(`/layers/${layerId}/comments`);
+  // Cambia la ruta aquí para que coincida con tu backend
+  const response = await api.get(`/comments/layers/${layerId}/comments`);
   return response.data;
 };
 
 export const getAllLayers = async () => {
   const response = await api.get("/layers");
   return response.data;
+};
+
+export const deleteComment = async (commentId) => {
+  return api.delete(`/comments/${commentId}`);
+};
+export const editComment = async (commentId, data) => {
+  return api.put(`/comments/${commentId}`, data);
 };

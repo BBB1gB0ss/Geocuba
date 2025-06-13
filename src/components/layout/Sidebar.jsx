@@ -75,13 +75,6 @@ const Sidebar = () => {
           ))}
         </nav>
       </div>
-
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <div className="text-xs text-gray-500 text-center">
-          <p>GEODESA v1.0</p>
-          <p>Sistema de Gestión Geográfica</p>
-        </div>
-      </div>
     </aside>
   );
 };
