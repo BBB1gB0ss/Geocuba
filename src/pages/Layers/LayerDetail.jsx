@@ -77,8 +77,16 @@ const LayerDetail = () => {
 
   const handleEditComment = async (commentId, newText) => {
     try {
-      const updated = await editComment(commentId, { text: newText });
-      setComments(comments.map((c) => (c.id === commentId ? updated : c)));
+      console.log(
+        "Editando comentario ID:",
+        commentId,
+        "Nuevo texto:",
+        newText
+      );
+      const updatedComment = await editComment(commentId, { text: newText });
+      setComments(
+        comments.map((c) => (c.id === commentId ? updatedComment : c))
+      );
     } catch (error) {
       setError("Error al editar el comentario");
     }
@@ -305,19 +313,19 @@ const LayerDetail = () => {
                               : "bg-gray-500"
                           }`}
                         >
-                          {comment.user.charAt(0)}
+                          {comment.author_name?.charAt(0)?.toUpperCase() || "U"}
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
                           <p className="font-medium text-dark">
-                            {comment.user}
+                            {comment.author_name}
                           </p>
                           <span
                             className={`text-xs px-2 py-0.5 rounded-full ${
-                              comment.role === "specialist"
+                              comment.author_role === "specialist"
                                 ? "bg-secondary-100 text-secondary-800"
-                                : comment.role === "admin"
+                                : comment.author_role === "admin"
                                 ? "bg-primary-100 text-primary-800"
                                 : "bg-gray-100 text-gray-800"
                             }`}
@@ -335,6 +343,10 @@ const LayerDetail = () => {
                             className="mt-2 flex gap-2"
                             onSubmit={(e) => {
                               e.preventDefault();
+                              console.log(
+                                "Submit edit for comment ID:",
+                                comment.id
+                              );
                               handleEditComment(comment.id, editText);
                               setEditingId(null);
                             }}
@@ -361,9 +373,7 @@ const LayerDetail = () => {
                           </form>
                         ) : (
                           <>
-                            <p className="mt-1 text-gray-700">
-                              {comment.content}
-                            </p>
+                            <p className="mt-1 text-gray-700">{comment.text}</p>
                             <p className="mt-1 text-xs text-gray-500">
                               {new Date(
                                 layer.updatedAt || layer.created_at
@@ -385,6 +395,18 @@ const LayerDetail = () => {
                                   <button
                                     className="text-blue-500 text-xs flex items-center gap-1"
                                     onClick={() => {
+                                      console.log("=== CLICK EDITAR ===");
+                                      console.log("Comment object:", comment);
+                                      console.log("Comment ID:", comment.id);
+                                      console.log(
+                                        "Comment text:",
+                                        comment.text
+                                      );
+                                      console.log(
+                                        "Type of ID:",
+                                        typeof comment.id
+                                      );
+                                      console.log("=== FIN CLICK EDITAR ===");
                                       setEditingId(comment.id);
                                       setEditText(comment.content);
                                     }}
