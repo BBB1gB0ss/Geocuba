@@ -55,3 +55,8 @@ export const getLayerComments = async (layerId) => {
   const response = await api.get(`/layers/${layerId}/comments`);
   return response.data;
 };
+
+export const getAllLayers = async () => {
+  const response = await api.get("/layers");
+  return response.data;
+};

@@ -15,85 +15,7 @@ import Button from "../../components/ui/Button";
 import Loading from "../../components/ui/Loading";
 import Modal from "../../components/ui/Modal";
 import Alert from "../../components/ui/Alert";
-import { getLayers, deleteLayer } from "../../services/layerService";
-
-// Mock data for demonstration
-const MOCK_LAYERS = [
-  {
-    id: 1,
-    name: "Mapa de Relieve Nacional",
-    description:
-      "Representación del relieve topográfico con detalle de elevaciones.",
-    thumbnail:
-      "https://images.pexels.com/photos/440731/pexels-photo-440731.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    date: "2023-11-15",
-    user: "Carlos Mendoza",
-    userId: 1,
-    keywords: ["relieve", "topografía", "elevación"],
-    format: "GeoTIFF",
-  },
-  {
-    id: 2,
-    name: "Distribución Urbana 2023",
-    description: "Mapa de distribución de áreas urbanas y rurales actualizado.",
-    thumbnail:
-      "https://images.pexels.com/photos/417344/pexels-photo-417344.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    date: "2023-11-10",
-    user: "María García",
-    userId: 2,
-    keywords: ["urbano", "ciudad", "rural"],
-    format: "Shapefile",
-  },
-  {
-    id: 3,
-    name: "Densidad Poblacional",
-    description: "Representación de la densidad poblacional por regiones.",
-    thumbnail:
-      "https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    date: "2023-11-05",
-    user: "José Pérez",
-    userId: 3,
-    keywords: ["población", "demografía", "densidad"],
-    format: "GeoJSON",
-  },
-  {
-    id: 4,
-    name: "Red Hidrográfica",
-    description: "Mapa completo de ríos, lagos y cuerpos de agua.",
-    thumbnail:
-      "https://images.pexels.com/photos/6157226/pexels-photo-6157226.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    date: "2023-10-28",
-    user: "Laura Martínez",
-    userId: 4,
-    keywords: ["hidrografía", "ríos", "lagos"],
-    format: "GeoTIFF",
-  },
-  {
-    id: 5,
-    name: "Zonas de Riesgo Sísmico",
-    description: "Clasificación de zonas según su nivel de riesgo sísmico.",
-    thumbnail:
-      "https://images.pexels.com/photos/2280571/pexels-photo-2280571.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    date: "2023-10-20",
-    user: "Daniel Rodríguez",
-    userId: 5,
-    keywords: ["sismicidad", "riesgo", "geología"],
-    format: "Shapefile",
-  },
-  {
-    id: 6,
-    name: "Uso de Suelos 2023",
-    description:
-      "Categorización detallada del uso de suelos en todo el territorio.",
-    thumbnail:
-      "https://images.pexels.com/photos/3609832/pexels-photo-3609832.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    date: "2023-10-15",
-    user: "Ana López",
-    userId: 6,
-    keywords: ["suelo", "territorio", "clasificación"],
-    format: "GeoJSON",
-  },
-];
+import { getAllLayers, deleteLayer } from "../../services/layerService";
 
 const LayersList = () => {
   const { user } = useAuth();
@@ -114,13 +36,8 @@ const LayersList = () => {
   useEffect(() => {
     const fetchLayers = async () => {
       try {
-        // In a real app, this would call the API
-        // For demo purposes, we're using mock data
-
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        setLayers(MOCK_LAYERS);
+        const data = await getAllLayers(); // Llama a la API real
+        setLayers(data);
       } catch (error) {
         console.error("Error fetching layers:", error);
         setAlert({
@@ -142,7 +59,10 @@ const LayersList = () => {
       searchTerm &&
       !layer.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
       !layer.description.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !layer.keywords.some((keyword) =>
+      !(
+        layer.keywords ||
+        (layer.palabras_clave ? layer.palabras_clave.split(",") : [])
+      ).some((keyword) =>
         keyword.toLowerCase().includes(searchTerm.toLowerCase())
       )
     ) {
@@ -150,12 +70,18 @@ const LayersList = () => {
     }
 
     // Date from filter
-    if (filters.dateFrom && new Date(layer.date) < new Date(filters.dateFrom)) {
+    if (
+      filters.dateFrom &&
+      new Date(layer.updatedAt || layer.created_at) < new Date(filters.dateFrom)
+    ) {
       return false;
     }
 
     // Date to filter
-    if (filters.dateTo && new Date(layer.date) > new Date(filters.dateTo)) {
+    if (
+      filters.dateTo &&
+      new Date(layer.updatedAt || layer.created_at) > new Date(filters.dateTo)
+    ) {
       return false;
     }
 
@@ -171,7 +97,10 @@ const LayersList = () => {
         .split(",")
         .map((k) => k.trim());
       if (
-        !layer.keywords.some((keyword) =>
+        !(
+          layer.keywords ||
+          (layer.palabras_clave ? layer.palabras_clave.split(",") : [])
+        ).some((keyword) =>
           keywordArray.some((k) => keyword.toLowerCase().includes(k))
         )
       ) {
@@ -192,16 +121,8 @@ const LayersList = () => {
 
     try {
       setIsLoading(true);
-
-      // In a real app, this would call the API
-      // For demo purposes, we're just updating the state
-
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Remove from state
+      await deleteLayer(layerToDelete.id); // Llama a la API real
       setLayers(layers.filter((layer) => layer.id !== layerToDelete.id));
-
       setAlert({
         type: "success",
         message: `La capa "${layerToDelete.name}" ha sido eliminada correctamente.`,
@@ -426,13 +347,13 @@ const LayersList = () => {
             >
               <div className="h-48 bg-gray-200 relative">
                 <img
-                  src={layer.thumbnail}
+                  src={layer.thumbnail || "/placeholder.png"}
                   alt={layer.name}
                   className="h-full w-full object-cover"
                 />
                 <div className="absolute top-2 right-2">
                   <span className="px-2 py-1 bg-white bg-opacity-90 rounded-md text-xs font-medium">
-                    {layer.format}
+                    {layer.format || "Sin formato"}
                   </span>
                 </div>
               </div>
@@ -462,7 +383,12 @@ const LayersList = () => {
                   {layer.description}
                 </p>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {layer.keywords.map((keyword, idx) => (
+                  {(
+                    layer.keywords ||
+                    (layer.palabras_clave
+                      ? layer.palabras_clave.split(",")
+                      : [])
+                  ).map((keyword, idx) => (
                     <span
                       key={idx}
                       className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
@@ -473,7 +399,9 @@ const LayersList = () => {
                 </div>
                 <div className="mt-4 flex justify-between items-center">
                   <div className="text-xs text-gray-500">
-                    {new Date(layer.date).toLocaleDateString()}
+                    {new Date(
+                      layer.updatedAt || layer.created_at
+                    ).toLocaleDateString()}
                   </div>
                   <Button
                     to={`/layers/${layer.id}`}
