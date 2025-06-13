@@ -14,12 +14,6 @@ const Sidebar = () => {
       roles: ["admin", "specialist", "user"],
     },
     {
-      title: "Mapa",
-      path: "/Map",
-      icon: <FiMap size={20} />,
-      roles: ["admin", "specialist", "user"],
-    },
-    {
       title: "Capas Geográficas",
       path: "/layers",
       icon: <FiMap size={20} />,
