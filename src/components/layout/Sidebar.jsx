@@ -1,5 +1,12 @@
 import { NavLink } from "react-router-dom";
-import { FiHome, FiMap, FiUsers, FiUpload, FiPlusCircle } from "react-icons/fi";
+import {
+  FiHome,
+  FiMap,
+  FiUsers,
+  FiUpload,
+  FiPlusCircle,
+  FiCompass,
+} from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 
 const Sidebar = () => {
@@ -16,7 +23,7 @@ const Sidebar = () => {
     {
       title: "Mapa",
       path: "/map",
-      icon: <FiMap size={20} />,
+      icon: <FiCompass size={20} />,
       roles: ["admin", "specialist", "user"],
     },
     {
