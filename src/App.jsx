@@ -16,6 +16,7 @@ import Login from "./pages/Auth/Login";
 const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const LayersList = lazy(() => import("./pages/Layers/LayersList"));
 const LayerDetail = lazy(() => import("./pages/Layers/LayerDetail"));
+const BasicMap = lazy(() => import("./pages/Map/Map")); // Assuming you have a Map component
 const LayerUpload = lazy(() => import("./pages/Layers/LayerUpload"));
 const UsersList = lazy(() => import("./pages/Users/UsersList"));
 const Register = lazy(() => import("./pages/Auth/Register"));
@@ -77,6 +78,15 @@ function App() {
             </ProtectedRoute>
           }
         >
+          <Route path="/map" element={<BasicMap />} />
+          <Route
+            path="/map/:id"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "specialist"]}>
+                <BasicMap />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/" element={<Navigate to="/dashboard\" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/layers" element={<LayersList />} />

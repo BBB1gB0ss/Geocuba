@@ -103,7 +103,7 @@ const Dashboard = () => {
         <StatsCard
           title="Mis Capas"
           value={stats.myLayers}
-          icon={<FiMap size={24} className="text-white" />}
+          icon={<FiLayers size={24} className="text-white" />}
           color="bg-secondary-500"
         />
         {user?.role === "admin" && (
