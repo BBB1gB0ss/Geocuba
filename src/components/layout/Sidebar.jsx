@@ -8,9 +8,15 @@ const Sidebar = () => {
   // Menu items based on user role
   const menuItems = [
     {
-      title: "Dashboard",
+      title: "Menu Principal",
       path: "/dashboard",
       icon: <FiHome size={20} />,
+      roles: ["admin", "specialist", "user"],
+    },
+    {
+      title: "Mapa",
+      path: "/map",
+      icon: <FiMap size={20} />,
       roles: ["admin", "specialist", "user"],
     },
     {
