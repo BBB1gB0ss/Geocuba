@@ -73,6 +73,7 @@ const MapaBasico = () => {
         capasCargadas.push({
           nombre: shapefile.nombre,
           data: geojson,
+          visible: false,
         });
       }
 
@@ -80,6 +81,15 @@ const MapaBasico = () => {
     } catch (error) {
       console.error("Error cargando shapefiles:", error);
     }
+  };
+
+  // Toggle visibilidad de capas
+  const toggleCapa = (nombre) => {
+    setCapas(
+      capas.map((capa) =>
+        capa.nombre === nombre ? { ...capa, visible: !capa.visible } : capa
+      )
+    );
   };
 
   useEffect(() => {
@@ -138,7 +148,8 @@ const MapaBasico = () => {
               <LayersControl.Overlay
                 key={index}
                 name={capa.nombre}
-                checked={true}
+                checked={capa.visible}
+                onChange={() => toggleCapa(capa.nombre)}
               >
                 <GeoJSON
                   data={capa.data}
