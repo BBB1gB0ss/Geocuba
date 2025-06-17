@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -32,6 +32,59 @@ const MapaBasico = () => {
   const [posicionClick, setPosicionClick] = useState(null);
   const NIVEL_ZOOM = 9;
   const referenciaMapa = useRef();
+  const [capas, setCapas] = useState([]);
+
+  // Función para cargar shapefiles
+  const cargarShapefiles = async () => {
+    try {
+      const capasCargadas = [];
+
+      // Lista de tus shapefiles (deben estar en public/capas/)
+      const shapefiles = [
+        {
+          nombre: "OBJETOS_HIDROTECNICOS_Y_DEL_TRANSPORTE_POR_AGUA",
+          url: "/capas/OBJETOS_HIDROTECNICOS_Y_DEL_TRANSPORTE_POR_AGUA.zip",
+        },
+        {
+          nombre: "VEGETACION_Y_SUELOS",
+          url: "/capas/VEGETACION_Y_SUELOS.zip",
+        },
+        {
+          nombre: "TRANSPORTE_TERRESTRE",
+          url: "/capas/TRANSPORTE_TERRESTRE.zip",
+        },
+        { nombre: "SOCIO_CULTURAL", url: "/capas/SOCIO_CULTURAL.zip" },
+        { nombre: "RELIEVE", url: "/capas/RELIEVE.zip" },
+        {
+          nombre: "LIMITES_Y_PROTECCIONES",
+          url: "/capas/LIMITES_Y_PROTECCIONES.zip",
+        },
+        {
+          nombre: "INDUSTRIAS_Y_SERVICIOS",
+          url: "/capas/INDUSTRIAS_Y_SERVICIOS.zip",
+        },
+        { nombre: "HIDROGRAFIA", url: "/capas/HIDROGRAFIA.zip" },
+        { nombre: "Hoja_2000", url: "/capas/Hoja_2000.zip" },
+        { nombre: "Limite_Marian", url: "/capas/Limite_Marian.zip" },
+      ];
+
+      for (const shapefile of shapefiles) {
+        const geojson = await shp(shapefile.url);
+        capasCargadas.push({
+          nombre: shapefile.nombre,
+          data: geojson,
+        });
+      }
+
+      setCapas(capasCargadas);
+    } catch (error) {
+      console.error("Error cargando shapefiles:", error);
+    }
+  };
+
+  useEffect(() => {
+    cargarShapefiles();
+  }, []);
 
   const icono = new Icon({
     iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
@@ -78,6 +131,34 @@ const MapaBasico = () => {
             url={osm.maptiler.url}
             attribution={osm.maptiler.attribution}
           />
+
+          {/* Capas de Shapefiles */}
+          <LayersControl position="topright">
+            {capas.map((capa, index) => (
+              <LayersControl.Overlay
+                key={index}
+                name={capa.nombre}
+                checked={true}
+              >
+                <GeoJSON
+                  data={capa.data}
+                  style={{ color: "#3388ff", weight: 2 }}
+                  onEachFeature={(feature, layer) => {
+                    if (feature.properties) {
+                      layer.bindPopup(
+                        Object.keys(feature.properties)
+                          .map(
+                            (key) => `<b>${key}:</b> ${feature.properties[key]}`
+                          )
+                          .join("<br>")
+                      );
+                    }
+                  }}
+                />
+              </LayersControl.Overlay>
+            ))}
+          </LayersControl>
+
           <ManejadorClicksMapa alHacerClick={manejarClickMapa} />
           {marcadores.map((marcador) => (
             <Marker key={marcador.id} position={marcador.posicion} icon={icono}>
