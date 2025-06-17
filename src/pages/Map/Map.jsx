@@ -5,11 +5,14 @@ import {
   Marker,
   Popup,
   useMapEvents,
+  LayersControl,
+  GeoJSON,
 } from "react-leaflet";
 import { Icon } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import osm from "./osm-providers.js";
 import { FiXCircle, FiCheckCircle, FiTrash2 } from "react-icons/fi";
+import shp from "shpjs";
 
 // Componente para manejar clicks en el mapa
 function ManejadorClicksMapa({ alHacerClick }) {
