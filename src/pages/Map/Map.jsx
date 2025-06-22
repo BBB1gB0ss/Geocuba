@@ -1,3 +1,5 @@
+// src/components/Map.jsx
+
 import React, { useState, useRef, useEffect } from "react";
 import {
   MapContainer,
@@ -12,10 +14,9 @@ import { Icon } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import osm from "./osm-providers.js";
 import { FiXCircle, FiCheckCircle, FiTrash2 } from "react-icons/fi";
-import shp from "shpjs"; // Import shpjs para procesar shapefiles ZIP
-import { getAllLayers } from "../../services/layerService"; // Asegúrate de que la ruta sea correcta a tu servicio
+import shp from "shpjs";
+import { getAllLayers } from "../../services/layerService";
 
-// Componente para manejar clicks en el mapa
 function ManejadorClicksMapa({ alHacerClick }) {
   const mapa = useMapEvents({
     click: (e) => {
@@ -26,106 +27,163 @@ function ManejadorClicksMapa({ alHacerClick }) {
 }
 
 const MapaBasico = () => {
-  const [centro] = useState([23.1136, -82.3666]); // Centro inicial del mapa (Cuba)
+  const [centro] = useState([23.1136, -82.3666]);
   const [marcadores, setMarcadores] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [comentario, setComentario] = useState("");
   const [posicionClick, setPosicionClick] = useState(null);
   const NIVEL_ZOOM = 9;
   const referenciaMapa = useRef();
-  const [capas, setCapas] = useState([]); // Estado para almacenar los datos GeoJSON de todas las capas
+  const [capas, setCapas] = useState([]);
 
-  // Define un ícono personalizado para los marcadores (opcional)
-  const customIcon = new Icon({
-    iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-    shadowSize: [41, 41],
-  });
-
-  // Función para cargar todas las capas (locales y subidas) desde el backend
-  const cargarShapefiles = async () => {
-    try {
-      const allLayers = await getAllLayers(); // Obtiene todas las capas de la base de datos
-      const loadedGeoJSONs = [];
-
-      for (const layer of allLayers) {
-        if (layer.file_url) {
-          try {
-            const response = await fetch(layer.file_url);
-            if (!response.ok) {
-              console.error(
-                `Error al cargar el archivo de la capa ${layer.name}: ${response.statusText}`
-              );
-              continue; // Saltar a la siguiente capa si hay un error
-            }
-            const arrayBuffer = await response.arrayBuffer();
-
-            let geojson;
-            // Comprobamos si la URL termina en .zip (para Shapefiles ZIP)
-            if (layer.file_url.endsWith(".zip")) {
-              // shpjs puede procesar un ArrayBuffer de un archivo ZIP que contiene shapefiles
-              geojson = await shp(arrayBuffer);
-            } else {
-              // Asumimos que es un GeoJSON directo si no es un ZIP
-              // Es importante decodificar ArrayBuffer a texto antes de JSON.parse
-              geojson = JSON.parse(new TextDecoder().decode(arrayBuffer));
-            }
-            loadedGeoJSONs.push({
-              id: layer.id,
-              name: layer.name,
-              data: geojson,
-            });
-          } catch (fileError) {
-            console.error(
-              `Error al procesar el archivo de la capa ${layer.name}:`,
-              fileError
-            );
-          }
-        }
-      }
-      setCapas(loadedGeoJSONs);
-      console.log("Capas geográficas cargadas y procesadas:", loadedGeoJSONs);
-    } catch (error) {
-      console.error("Error al cargar las capas desde el backend:", error);
-    }
+  const handleMapClick = (latlng) => {
+    setPosicionClick(latlng);
+    setMostrarModal(true);
   };
 
-  // Se ejecuta solo una vez al montar el componente para cargar las capas
-  useEffect(() => {
-    cargarShapefiles();
-  }, []);
-
-  // Función para guardar comentario de marcador
   const guardarComentario = () => {
-    if (comentario && posicionClick) {
+    if (posicionClick && comentario) {
       setMarcadores([
         ...marcadores,
         { posicion: posicionClick, comentario: comentario },
       ]);
-      setMostrarModal(false);
       setComentario("");
+      setMostrarModal(false);
       setPosicionClick(null);
     }
   };
 
-  // Función para eliminar marcador
-  const eliminarMarcador = (indexAEliminar) => {
-    setMarcadores(marcadores.filter((_, index) => index !== indexAEliminar));
+  const cargarCapasDesdeBackend = async () => {
+    try {
+      const layersFromApi = await getAllLayers();
+      console.log("Capas obtenidas del backend:", layersFromApi);
+
+      const loadedGeoJSONs = [];
+
+      for (const layer of layersFromApi) {
+        if (!layer.file_url) {
+          console.warn(
+            `Capa "${layer.name}" (ID: ${layer.id}) no tiene file_url. Saltando.`
+          );
+          continue;
+        }
+
+        try {
+          console.log(
+            `Intentando cargar capa: ${layer.name} de URL: ${layer.file_url}`
+          );
+          const response = await fetch(layer.file_url);
+
+          if (!response.ok) {
+            console.error(
+              `Error al cargar la capa ${layer.name} (${layer.file_url}):`,
+              response.statusText
+            );
+            continue;
+          }
+
+          let geojsonData = null;
+
+          // Determinar el formato y procesar
+          if (layer.file_url.endsWith(".zip") || layer.format === "Shapefile") {
+            const arrayBuffer = await response.arrayBuffer();
+            let shpResult = await shp(arrayBuffer); // Obtener el resultado de shpjs
+
+            // === INICIO DE LA LÓGICA MODIFICADA PARA UNIFICAR EL ZIP ===
+            if (Array.isArray(shpResult)) {
+              // Si shpjs devuelve un array, combinamos todas las características en una única FeatureCollection
+              const combinedFeatures = [];
+              shpResult.forEach((geojsonItem) => {
+                if (geojsonItem.type === "FeatureCollection") {
+                  combinedFeatures.push(...geojsonItem.features);
+                } else if (geojsonItem.type === "Feature") {
+                  combinedFeatures.push(geojsonItem);
+                }
+                // Puedes añadir lógica para otros tipos GeoJSON si tus ZIPs los contuvieran
+              });
+              geojsonData = {
+                type: "FeatureCollection",
+                features: combinedFeatures,
+                properties: {
+                  // Añadir propiedades comunes a la colección combinada
+                  layer_id: layer.id,
+                  layer_name: layer.name,
+                },
+              };
+            } else if (shpResult && shpResult.type) {
+              // Si shpjs devuelve un único objeto GeoJSON (FeatureCollection o Feature)
+              geojsonData = shpResult;
+              // Asegurar que las propiedades se añaden
+              geojsonData.properties = {
+                ...(geojsonData.properties || {}),
+                layer_id: layer.id,
+                layer_name: layer.name,
+              };
+            } else {
+              console.warn(
+                `shpjs devolvió un formato inesperado para ${layer.name}.`
+              );
+              continue; // Saltar esta capa
+            }
+            // === FIN DE LA LÓGICA MODIFICADA PARA UNIFICAR EL ZIP ===
+          } else if (
+            layer.file_url.endsWith(".geojson") ||
+            layer.format === "GeoJSON"
+          ) {
+            geojsonData = await response.json();
+            geojsonData.properties = {
+              ...(geojsonData.properties || {}),
+              layer_id: layer.id,
+              layer_name: layer.name,
+            };
+          } else if (layer.file_url.endsWith(".json")) {
+            geojsonData = await response.json();
+            geojsonData.properties = {
+              ...(geojsonData.properties || {}),
+              layer_id: layer.id,
+              layer_name: layer.name,
+            };
+          } else {
+            console.warn(
+              `Formato de capa no soportado para ${layer.name}: ${layer.file_url}`
+            );
+            continue;
+          }
+
+          if (geojsonData) {
+            loadedGeoJSONs.push({
+              id: layer.id, // Se mantiene el ID de la capa original para la clave
+              name: layer.name,
+              data: geojsonData, // El objeto GeoJSON consolidado
+            });
+          }
+        } catch (fileLoadError) {
+          console.error(
+            `Error al procesar el archivo para la capa ${layer.name} (ID: ${layer.id}):`,
+            fileLoadError
+          );
+        }
+      }
+      setCapas(loadedGeoJSONs);
+    } catch (apiError) {
+      console.error("Error al obtener las capas del backend:", apiError);
+    }
   };
+
+  useEffect(() => {
+    cargarCapasDesdeBackend();
+  }, []);
 
   return (
     <>
       <MapContainer
         center={centro}
         zoom={NIVEL_ZOOM}
-        whenCreated={(mapa) => (referenciaMapa.current = mapa)}
-        style={{ height: "calc(100vh - 100px)", width: "100%" }}
+        whenCreated={(map) => {
+          referenciaMapa.current = map;
+        }}
+        style={{ height: "calc(100vh - 60px)", width: "100%" }}
       >
-        <ManejadorClicksMapa alHacerClick={setPosicionClick} />
-
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="OpenStreetMap">
             <TileLayer
@@ -133,46 +191,33 @@ const MapaBasico = () => {
               attribution={osm.maptiler.attribution}
             />
           </LayersControl.BaseLayer>
-          {/* Aquí se añaden las capas dinámicamente desde el estado 'capas' */}
+
           {capas.map((capa) => (
-            <LayersControl.Overlay key={capa.id} name={capa.name}>
-              {/* Puedes personalizar el estilo de las capas GeoJSON aquí */}
-              <GeoJSON
-                data={capa.data}
-                style={() => ({ color: "blue", weight: 2 })}
-              />
+            <LayersControl.Overlay name={capa.name} key={capa.id}>
+              {capa.data && <GeoJSON data={capa.data} />}
             </LayersControl.Overlay>
+          ))}
+
+          {marcadores.map((marcador, idx) => (
+            <Marker key={idx} position={marcador.posicion}>
+              <Popup>{marcador.comentario}</Popup>
+            </Marker>
           ))}
         </LayersControl>
 
-        {/* Renderiza marcadores existentes */}
-        {marcadores.map((marcador, index) => (
-          <Marker key={index} position={marcador.posicion} icon={customIcon}>
-            <Popup>
-              {marcador.comentario}
-              <br />
-              <button
-                onClick={() => eliminarMarcador(index)}
-                className="text-red-500 flex items-center gap-1 mt-2"
-              >
-                <FiTrash2 /> Eliminar
-              </button>
-            </Popup>
-          </Marker>
-        ))}
+        <ManejadorClicksMapa alHacerClick={handleMapClick} />
       </MapContainer>
 
-      {/* Modal para agregar comentario al marcador */}
       {mostrarModal && (
         <div
-          className="modal-overlay"
+          className="modal"
           style={{
             position: "fixed",
             top: 0,
             left: 0,
             width: "100%",
             height: "100%",
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backgroundColor: "rgba(0,0,0,0.5)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -180,14 +225,13 @@ const MapaBasico = () => {
           }}
         >
           <div
-            className="modal-content"
+            className="modal-contenido"
             style={{
               backgroundColor: "white",
               padding: "20px",
               borderRadius: "8px",
               width: "400px",
-              maxHeight: "80vh",
-              overflowY: "auto",
+              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
               position: "relative",
             }}
           >
@@ -195,24 +239,31 @@ const MapaBasico = () => {
               className="cerrar-modal"
               onClick={() => setMostrarModal(false)}
               style={{
-                cursor: "pointer",
                 position: "absolute",
                 top: "10px",
                 right: "15px",
                 fontSize: "24px",
+                cursor: "pointer",
               }}
             >
               &times;
             </span>
-            <h3 className="text-lg font-semibold mb-4">Agregar Comentario</h3>
+            <h3>Agregar Comentario</h3>
             <textarea
               id="texto-comentario"
               value={comentario}
               onChange={(e) => setComentario(e.target.value)}
               autoFocus
               placeholder="Escribe tu comentario aquí..."
-              className="w-full p-2 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              style={{ minHeight: "100px" }}
+              style={{
+                height: "100px", // Ajustado para ser un poco más pequeño
+                width: "100%",
+                padding: "8px",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+                resize: "vertical",
+                marginBottom: "10px",
+              }}
             />
             <div
               className="botones-modal"

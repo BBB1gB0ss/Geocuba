@@ -213,54 +213,6 @@ const LayerUpload = () => {
               />
             </div>
 
-            <div>
-              <label
-                htmlFor="resolution"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Resolución
-              </label>
-              <input
-                type="text"
-                id="resolution"
-                {...register("resolution")}
-                placeholder="Ej: 1:50000"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="projection"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Proyección
-              </label>
-              <input
-                type="text"
-                id="projection"
-                {...register("projection")}
-                placeholder="Ej: WGS84, UTM"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="source"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Fuente
-              </label>
-              <input
-                type="text"
-                id="source"
-                {...register("source")}
-                placeholder="Ej: DPA, ONEI"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-
             {/* File Upload Section */}
             <div className="md:col-span-2 mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
