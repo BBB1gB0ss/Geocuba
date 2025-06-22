@@ -168,68 +168,6 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Comments */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-          <h2 className="text-lg font-medium">Comentarios Recientes</h2>
-        </div>
-        <div className="divide-y divide-gray-200">
-          {recentComments.length === 0 ? (
-            <p className="text-gray-500 p-4 text-center">
-              No hay comentarios recientes
-            </p>
-          ) : (
-            recentComments.map((comment) => (
-              <div key={comment.id || comment._id} className="px-4 py-3">
-                <div className="flex justify-between">
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0">
-                      <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-white">
-                        {(comment.userName || comment.user?.name || "U").charAt(
-                          0
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <p className="font-medium text-dark">
-                          {comment.userName || comment.user?.name || "Usuario"}
-                        </p>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${
-                            comment.role === "specialist"
-                              ? "bg-secondary-100 text-secondary-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {comment.role === "specialist"
-                            ? "Especialista"
-                            : "Usuario"}
-                        </span>
-                      </div>
-                      <Link
-                        to={`/layers/${
-                          comment.layerId ||
-                          comment.layer?.id ||
-                          comment.layer?._id
-                        }`}
-                        className="text-sm text-secondary-600 hover:underline"
-                      >
-                        Re: {comment.layerName || comment.layer?.name || "Capa"}
-                      </Link>
-                      <p className="mt-1 text-gray-600">
-                        {comment.content || comment.text}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {new Date(comment.createdAt).toLocaleDateString()}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
     </div>
   );
 };
